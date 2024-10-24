@@ -104,14 +104,14 @@ class DataBase(object):
         
         verify = await self.getUserByID(user_id)
 
-        if verify['status']:
+        if verify['status'] == "OK":
             return { "status": "EXISTS_USER_ID" }
         
         _time = await self.getTime()
 
         self.dbs.execute(
             """
-            INSERT INTO handled_users (userid, fullname, username, first_log, wallet_hash, every_shoppings, cloned_repos) VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO handled_users (userid, fullname, username, first_log, wallet_hash, every_shoppings, cloned_repos, limit_attempts) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
@@ -120,7 +120,8 @@ class DataBase(object):
                 _time,
                 "null",
                 "[]",
-                "[]"
+                "[]",
+                0
             )
         )
 
@@ -133,7 +134,8 @@ class DataBase(object):
                 _time,
                 "null",
                 "[]",
-                "[]"
+                "[]",
+                0
             ) }
 
     async def delete(
