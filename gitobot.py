@@ -16,6 +16,7 @@ import sqlite3
 import zipfile
 import aiofiles
 import git
+import asyncio
 
 bot = AsyncTeleBot(BOT_TOKEN)
 tron = Tron()
@@ -253,7 +254,7 @@ async def on(message: Message):
             """.strip()
         )
 
-    elif message == "/up":
+    elif message.text == "/up":
         user_data = await database.getUserByID(message.from_user.id)
 
         if user_data['status'] == "OK":
@@ -373,3 +374,9 @@ async def handle_query(call):
 /subscribe: subscribe to use unlimited version 🎶
             """.strip()
         )
+
+def run():
+    asyncio.run(bot.polling())
+
+if __name__ == "__main__":
+    run()
