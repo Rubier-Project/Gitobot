@@ -258,10 +258,11 @@ async def on(message: Message):
 
         if user_data['status'] == "OK":
             shps = await database.calculateShops(message.from_user.id)
+            hided_wallet = user_data['user'][4].replace(user_data['user'][4][10:], "...")
             markup = InlineKeyboardMarkup()
             button = InlineKeyboardButton("See Help", callback_data="Help")
             markup.add(button)
-            await bot.reply_to(message, f"You already have an account !\nID 🍷: {user_data['user'][0]}\nName ⚜: {user_data['user'][1]}\nUsername 🔰: {user_data['user'][2]}\nFirst Log 📃: {user_data['user'][3]}\nWallet 🎟: {user_data['user'][4]}\nEvery Shoppings 🧤🧣: {shps['shopped']}\nCloned Repos 🤳: {user_data['user'][6]}\nLimit Attempts 🍡: {user_data['user'][7]}", reply_markup=markup)
+            await bot.reply_to(message, f"You already have an account !\nID 🍷: {user_data['user'][0]}\nName ⚜: {user_data['user'][1]}\nUsername 🔰: {user_data['user'][2]}\nFirst Log 📃: {user_data['user'][3]}\nWallet 🎟: {hided_wallet}\nEvery Shoppings 🧤🧣: {shps['shopped']}\nCloned Repos 🤳: {user_data['user'][6]}\nLimit Attempts 🍡: {user_data['user'][7]}", reply_markup=markup)
 
         else:
             markup = InlineKeyboardMarkup()
@@ -272,60 +273,91 @@ async def on(message: Message):
 
     elif message.text.startswith("/clone"):
         user = await database.getUserByID(message.from_user.id)
-        islimit = await database.isLimit(message.from_user.id)
 
-        if islimit['is_limit'] == True:
-            markup = InlineKeyboardMarkup()
-            button = InlineKeyboardButton("See Help", callback_data="Help")
-            markup.add(button)
-            await bot.reply_to(message, "Sorry But You Are Limit ! Subscibe to use Unlimited version", reply_markup=markup)
+        if user['status'] == "OK":
 
-        git_url = message.text[6:].strip()
+            islimit = await database.isLimit(message.from_user.id)
 
-        if git_url.startswith("https://github.com/"):
-            status = await gitmanager.clone(git_url)
-            if status['status'] == "OK":
-                user['user'][7] += 1
-                await database.edit(message.from_user.id, limit_attempts=user['user'][7])
-                with aiofiles.open(status['path'], 'rb') as FILE:
-                    await bot.send_document(message.chat.id, data=FILE, reply_to_message_id=message.id, caption=f"URL: {git_url}\nLimited in: {user['user'][7]}/10")
+            if islimit['is_limit'] == True:
+                markup = InlineKeyboardMarkup()
+                button = InlineKeyboardButton("See Help", callback_data="Help")
+                markup.add(button)
+                await bot.reply_to(message, "Sorry But You Are Limit ! Subscibe to use Unlimited version", reply_markup=markup)
+
+            git_url = message.text[6:].strip()
+
+            if git_url.startswith("https://github.com/"):
+                status = await gitmanager.clone(git_url)
+                if status['status'] == "OK":
+                    user['user'][7] += 1
+                    await database.edit(message.from_user.id, limit_attempts=user['user'][7])
+                    with aiofiles.open(status['path'], 'rb') as FILE:
+                        await bot.send_document(message.chat.id, data=FILE, reply_to_message_id=message.id, caption=f"URL: {git_url}\nLimited in: {user['user'][7]}/10")
+                
+                else:await bot.reply_to(message, f"Error While Cloning: {status['message']}")
             
-            else:await bot.reply_to(message, f"Error While Cloning: {status['message']}")
-        
-        elif git_url.count(" ") == 0:
-            splitted = git_url.split(" ")
-            username = splitted[0]
-            reponame = splitted[1]
+            elif git_url.count(" ") == 0:
+                splitted = git_url.split(" ")
+                username = splitted[0]
+                reponame = splitted[1]
 
-            status = await gitmanager.clone_by_user(username, reponame)
-            if status['status'] == "OK":
-                user['user'][7] += 1
-                await database.edit(message.from_user.id, limit_attempts=user['user'][7])
-                with aiofiles.open(status['path'], 'rb') as FILE:
-                    await bot.send_document(message.chat.id, data=FILE, reply_to_message_id=message.id, caption=f"URL: {git_url}\nLimited in: {user['user'][7]}/10")
-            else:await bot.reply_to(message, f"Error While Cloning: {status['message']}")
-        
+                status = await gitmanager.clone_by_user(username, reponame)
+                if status['status'] == "OK":
+                    user['user'][7] += 1
+                    await database.edit(message.from_user.id, limit_attempts=user['user'][7])
+                    with aiofiles.open(status['path'], 'rb') as FILE:
+                        await bot.send_document(message.chat.id, data=FILE, reply_to_message_id=message.id, caption=f"URL: {git_url}\nLimited in: {user['user'][7]}/10")
+                else:await bot.reply_to(message, f"Error While Cloning: {status['message']}")
+            
+            else:
+                markup = InlineKeyboardMarkup()
+                button = InlineKeyboardButton("See Help", callback_data="Help")
+                markup.add(button)
+                await bot.reply_to(message, "Invalid Usage Syntax ! ❌", reply_markup=markup)
+
         else:
-            markup = InlineKeyboardMarkup()
-            button = InlineKeyboardButton("See Help", callback_data="Help")
-            markup.add(button)
-            await bot.reply_to(message, "Invalid Usage Syntax ! ❌", reply_markup=markup)
+            await bot.reply_to(message, "Please create an account with `/up` command", parse_mode="Markdown")
 
     elif message.text.startswith("/set"):
-        wallet = message.text[4:].strip()
-        if wallet == "":
-            await bot.reply_to(message, "Cannot Find the Hash Wallet from Message 👁")
+        user = await database.getUserByID(message.from_user.id)
+
+        if user['status'] == "OK":
+            wallet = message.text[4:].strip()
+            if wallet == "":
+                await bot.reply_to(message, "Cannot Find the Hash Wallet from Message 👁")
+
+            else:
+                user = await database.getUserByID(message.from_user.id)
+                markup = InlineKeyboardMarkup()
+                shop_button = InlineKeyboardButton("Shoppings", callback_data="Shops")
+                subscribe = InlineKeyboardButton("Subscribe", callback_data="Sub")
+                markup.add(shop_button, subscribe)
+                await database.edit(message.from_user.id, wallet)
+                await bot.reply_to(message, f"Wallet Updated 🌐\nOld One 📁: {user['user'][4]}\nNew One 📪: {wallet}", reply_markup=markup)
 
         else:
-            user = await database.getUserByID(message.from_user.id)
-            markup = InlineKeyboardMarkup()
-            shop_button = InlineKeyboardButton("Shoppings", callback_data="Shops")
-            subscribe = InlineKeyboardButton("Subscribe", callback_data="Sub")
-            markup.add(shop_button, subscribe)
-            await database.edit(message.from_user.id, wallet)
-            await bot.reply_to(message, f"Wallet Updated 🌐\nOld One 📁: {user['user'][4]}\nNew One 📪: {wallet}", reply_markup=markup)
+            await bot.reply_to(message, "Please create an account with `/up` command", parse_mode="Markdown")
 
-@bot.callback_query_handler(func=lambda call: True)
+    elif message.text == "/myshoppings":
+        user = await database.getUserByID(message.from_user.id)
+
+        if user['status'] == "OK":
+            shops = await database.calculateShops(message.from_user.id)
+            await bot.reply_to(message, f"Your All Paids are {shops['shopped']} 💲")
+        else:
+            await bot.reply_to(message, "Please create an account with `/up` command", parse_mode="Markdown")
+
+    elif message.text == "/urls":
+        user = await database.getUserByID(message.from_user.id)
+
+        if user['status'] == "OK":
+            urls = await database.getClones(message.from_user.id)
+            urls = dumps(urls['urls'], indent=2)
+            await bot.reply_to(message, f"Urls: 📃\n{urls}")
+        else:
+            await bot.reply_to(message, "Please create an account with `/up` command", parse_mode="Markdown")
+
+@bot.callback_query_handler(func=lambda call: True) # Add Shops and Sub - Line 322 - Admin Panel
 async def handle_query(call):
     if call.data == "Help":
         await bot.reply_to(
